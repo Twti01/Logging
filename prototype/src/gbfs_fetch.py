@@ -16,28 +16,34 @@ from shapely.geometry import Point, shape
 from .config import load_config
 from .db_schema import Station, StationStatus, get_session, init_db
 
-# Brooklyn-Polygon von NYC Open Data (Borough Boundaries)
-BROOKLYN_GEOJSON_URL = (
-    "https://data.cityofnewyork.us/api/geospatial/7t3b-ywvw"
-    "?method=export&type=GeoJSON"
-)
+# Vereinfachtes Brooklyn-Polygon (Kings County Grenzen, im Uhrzeigersinn)
+# Genau genug um alle Citi-Bike-Stationen korrekt Brooklyn zuzuordnen.
+_BROOKLYN_COORDS = [
+    (-74.0421, 40.6160),  # Bay Ridge SW
+    (-74.0300, 40.5870),  # Gravesend
+    (-74.0042, 40.5707),  # Coney Island West
+    (-73.9450, 40.5707),  # Coney Island East
+    (-73.8800, 40.5870),  # Sheepshead Bay
+    (-73.8334, 40.6100),  # Canarsie / SE-Ecke
+    (-73.8334, 40.7000),  # East New York
+    (-73.8600, 40.7384),  # Bushwick / Queens-Grenze
+    (-73.9300, 40.7384),  # Greenpoint / Queens-Grenze Nord
+    (-73.9505, 40.7295),  # Greenpoint NW
+    (-73.9800, 40.7000),  # Brooklyn Heights
+    (-74.0200, 40.6780),  # Sunset Park / Red Hook
+    (-74.0421, 40.6160),  # zurueck zum Start
+]
 _brooklyn_polygon = None
 
 
 def _get_brooklyn_polygon():
-    """Laedt das Brooklyn-Polygon einmalig und cached es."""
+    """Gibt das statische Brooklyn-Polygon zurueck (wird einmal gebaut, dann gecacht)."""
     global _brooklyn_polygon
-    if _brooklyn_polygon is not None:
-        return _brooklyn_polygon
-    resp = requests.get(BROOKLYN_GEOJSON_URL, timeout=30)
-    resp.raise_for_status()
-    features = resp.json()["features"]
-    for f in features:
-        if f["properties"].get("boro_name", "").lower() == "brooklyn":
-            _brooklyn_polygon = shape(f["geometry"])
-            log.info("Brooklyn-Polygon geladen")
-            return _brooklyn_polygon
-    raise ValueError("Brooklyn-Polygon nicht gefunden in NYC Open Data")
+    if _brooklyn_polygon is None:
+        from shapely.geometry import Polygon
+        _brooklyn_polygon = Polygon(_BROOKLYN_COORDS)
+        log.info("Brooklyn-Polygon initialisiert (%d Stuetzpunkte)", len(_BROOKLYN_COORDS))
+    return _brooklyn_polygon
 
 # ---------------------------------------------------------------------------
 # Logging-Setup: Ausgabe nach stdout (landet in journalctl)
