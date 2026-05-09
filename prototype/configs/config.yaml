@@ -1,0 +1,27 @@
+# Konfiguration fuer den Prototyp.
+# Beispielregion: kleines Williamsburg-Rechteck in Brooklyn.
+study_area:
+  name: williamsburg_sample
+  bbox:
+    south: 40.700
+    west: -73.970
+    north: 40.730
+    east: -73.940
+  h3_resolution: 9   # ca. 175 m Kantenlaenge
+
+gbfs:
+  status_url: https://gbfs.citibikenyc.com/gbfs/en/station_status.json
+  info_url:   https://gbfs.citibikenyc.com/gbfs/en/station_information.json
+
+llm:
+  model: qwen2.5:7b
+  endpoint: http://localhost:11434
+
+forecast:
+  horizon_hours: 24
+  hidden_dim: 32
+  num_layers: 2
+
+paths:
+  db: db/prototype.sqlite
+  data_dir: data
