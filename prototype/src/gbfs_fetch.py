@@ -84,7 +84,6 @@ def fetch_once() -> dict:
     """
     cfg  = load_config()
     res  = cfg["study_area"]["h3_resolution"]
-    bbox = cfg["study_area"]["bbox"]
 
     log.info("GBFS-Abruf gestartet")
 
