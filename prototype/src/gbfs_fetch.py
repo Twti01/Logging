@@ -11,9 +11,33 @@ from datetime import datetime, timezone
 
 import requests
 import h3
+from shapely.geometry import Point, shape
 
 from .config import load_config
 from .db_schema import Station, StationStatus, get_session, init_db
+
+# Brooklyn-Polygon von NYC Open Data (Borough Boundaries)
+BROOKLYN_GEOJSON_URL = (
+    "https://data.cityofnewyork.us/api/geospatial/7t3b-ywvw"
+    "?method=export&type=GeoJSON"
+)
+_brooklyn_polygon = None
+
+
+def _get_brooklyn_polygon():
+    """Laedt das Brooklyn-Polygon einmalig und cached es."""
+    global _brooklyn_polygon
+    if _brooklyn_polygon is not None:
+        return _brooklyn_polygon
+    resp = requests.get(BROOKLYN_GEOJSON_URL, timeout=30)
+    resp.raise_for_status()
+    features = resp.json()["features"]
+    for f in features:
+        if f["properties"].get("boro_name", "").lower() == "brooklyn":
+            _brooklyn_polygon = shape(f["geometry"])
+            log.info("Brooklyn-Polygon geladen")
+            return _brooklyn_polygon
+    raise ValueError("Brooklyn-Polygon nicht gefunden in NYC Open Data")
 
 # ---------------------------------------------------------------------------
 # Logging-Setup: Ausgabe nach stdout (landet in journalctl)
@@ -76,6 +100,7 @@ def fetch_once() -> dict:
     n_status       = 0
     n_bbox_skip    = 0
 
+    brooklyn = _get_brooklyn_polygon()
     info_index = {s["station_id"]: s for s in info["data"]["stations"]}
 
     try:
@@ -86,11 +111,8 @@ def fetch_once() -> dict:
 
             lat, lon = meta["lat"], meta["lon"]
 
-            # Nur Stationen innerhalb der Bounding Box behalten
-            if not (
-                bbox["south"] <= lat <= bbox["north"]
-                and bbox["west"] <= lon <= bbox["east"]
-            ):
+            # Exakte Polygon-Pruefung statt Bounding Box
+            if not brooklyn.contains(Point(lon, lat)):
                 n_bbox_skip += 1
                 continue
 

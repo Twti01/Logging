@@ -1,12 +1,8 @@
-# Konfiguration fuer den Prototyp.
-# Beispielregion: kleines Williamsburg-Rechteck in Brooklyn.
+# Konfiguration fuer die Brooklyn Bike Thesis.
+# Filterung erfolgt ueber das echte Brooklyn-Polygon (NYC Open Data),
+# nicht mehr ueber eine Bounding Box.
 study_area:
-  name: williamsburg_sample
-  bbox:
-    south: 40.700
-    west: -73.970
-    north: 40.730
-    east: -73.940
+  name: brooklyn_full
   h3_resolution: 9   # ca. 175 m Kantenlaenge
 
 gbfs:
