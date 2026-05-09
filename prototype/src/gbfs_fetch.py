@@ -11,38 +11,24 @@ from datetime import datetime, timezone
 
 import requests
 import h3
-from shapely.geometry import Point, shape
+from pathlib import Path
+from shapely.geometry import Point
 
 from .config import load_config
 from .db_schema import Station, StationStatus, get_session, init_db
 
-# Vereinfachtes Brooklyn-Polygon (Kings County Grenzen, im Uhrzeigersinn)
-# Genau genug um alle Citi-Bike-Stationen korrekt Brooklyn zuzuordnen.
-_BROOKLYN_COORDS = [
-    (-74.0421, 40.6160),  # Bay Ridge SW
-    (-74.0300, 40.5870),  # Gravesend
-    (-74.0042, 40.5707),  # Coney Island West
-    (-73.9450, 40.5707),  # Coney Island East
-    (-73.8800, 40.5870),  # Sheepshead Bay
-    (-73.8334, 40.6100),  # Canarsie / SE-Ecke
-    (-73.8334, 40.7000),  # East New York
-    (-73.8600, 40.7384),  # Bushwick / Queens-Grenze
-    (-73.9300, 40.7384),  # Greenpoint / Queens-Grenze Nord
-    (-73.9505, 40.7295),  # Greenpoint NW
-    (-73.9800, 40.7000),  # Brooklyn Heights
-    (-74.0200, 40.6780),  # Sunset Park / Red Hook
-    (-74.0421, 40.6160),  # zurueck zum Start
-]
 _brooklyn_polygon = None
+_BROOKLYN_GEOJSON = Path(__file__).resolve().parent.parent / "configs" / "brooklyn.geojson"
 
 
 def _get_brooklyn_polygon():
-    """Gibt das statische Brooklyn-Polygon zurueck (wird einmal gebaut, dann gecacht)."""
+    """Laedt das Brooklyn-Polygon aus der lokalen GeoJSON-Datei (einmalig, dann gecacht)."""
     global _brooklyn_polygon
     if _brooklyn_polygon is None:
-        from shapely.geometry import Polygon
-        _brooklyn_polygon = Polygon(_BROOKLYN_COORDS)
-        log.info("Brooklyn-Polygon initialisiert (%d Stuetzpunkte)", len(_BROOKLYN_COORDS))
+        import geopandas as gpd
+        gdf = gpd.read_file(_BROOKLYN_GEOJSON)
+        _brooklyn_polygon = gdf.geometry.union_all()
+        log.info("Brooklyn-Polygon geladen (%d Stuetzpunkte)", len(_brooklyn_polygon.exterior.coords))
     return _brooklyn_polygon
 
 # ---------------------------------------------------------------------------
