@@ -40,12 +40,15 @@ class Station(Base):
 
 
 class StationStatus(Base):
-    """Zeitreihen-Tabelle – wird nach init_db() zur TimescaleDB Hypertable."""
+    """Zeitreihen-Tabelle – wird nach init_db() zur TimescaleDB Hypertable.
+
+    Primary Key ist (station_id, timestamp) – TimescaleDB verlangt dass die
+    Partitionierungsspalte (timestamp) Teil des Primary Keys ist.
+    """
     __tablename__ = "station_status"
 
-    id              = Column(Integer, primary_key=True, autoincrement=True)
-    station_id      = Column(String, index=True)
-    timestamp       = Column(DateTime(timezone=True), index=True, nullable=False)
+    station_id      = Column(String, primary_key=True)
+    timestamp       = Column(DateTime(timezone=True), primary_key=True, nullable=False)
     bikes_available = Column(Integer)
     docks_available = Column(Integer)
     is_renting      = Column(Integer)
